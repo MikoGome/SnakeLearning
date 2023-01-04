@@ -5,6 +5,14 @@ class Snake {
     this.controls = new Controls();
     this.speed = 4;
     this.isDead = false;
+
+    this.appleSensors = null;
+    this.wallSensors = null;
+  }
+
+  see(apple, board) {
+    this.appleSensors = new Sensor(8, this.head, apple);
+    this.wallSensors = new Sensor(8, this.head, board);
   }
 
   update() {
@@ -18,6 +26,8 @@ class Snake {
     if(this.#canTurn()) {
       this.turn();
     }
+    this.appleSensors.update();
+    this.wallSensors.update();
   }
 
   draw(ctx) {
@@ -31,6 +41,7 @@ class Snake {
       ctx.fillStyle= 'green';
       ctx.fill();
     });
+    this.appleSensors.draw(ctx, 'yellow');
   }
 
   move() {

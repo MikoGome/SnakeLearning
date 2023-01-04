@@ -8,6 +8,8 @@ class Board {
       chunkify(this.height / 2, 32)
       );
     this.apple = new Apple(this.width, this.height, this.chunk, this.chunk);
+
+    this.snake.see(this.apple, this)
   }
 
   update() {
