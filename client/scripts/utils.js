@@ -54,7 +54,7 @@ function getIntersection(A,B,C,D) {
   tBottom = (D.y - C.y) * (B.x - A.x) - (D.x - C.x) * (B.y - A.y);
   uTop = (C.y - A.y) * (B.x - A.x) - (C.x - A.x) * (B.y - A.y);
   uBottom = (D.x - C.x) * (B.y - A.y) - (D.y - C.y) * (B.x - A.x);
-
+  
   if(tBottom !== 0) {
     const t = tTop/tBottom;
     const u = uTop/uBottom;
@@ -62,14 +62,14 @@ function getIntersection(A,B,C,D) {
       return {
         x: lerp(A.x, B.x, t),
         y: lerp(A.y, B.y, t),
-        offset: t
+        offset: t,
+        intersecting: true,
       }
-    } 
+    }
   } 
-  
   return {
-    x: B.x,
-    y: B.y,
-    offset: 0
+    ...B,
+    offset: 1,
+    intersecting: false,
   }
 }

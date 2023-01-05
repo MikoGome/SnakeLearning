@@ -7,12 +7,14 @@ class Snake {
     this.isDead = false;
 
     this.appleSensors = null;
+    this.bodySensors = null;
     this.wallSensors = null;
   }
 
   see(apple, board) {
-    this.appleSensors = new Sensor(8, this.head, apple);
-    this.wallSensors = new Sensor(8, this.head, board);
+    this.appleSensors = new Sensor(8, this.head, apple, board);
+    this.bodySensors = new Sensor(8, this.head, this.body, board);
+    this.wallSensors = new Sensor(8, this.head, board, board);
   }
 
   update() {
@@ -27,6 +29,7 @@ class Snake {
       this.turn();
     }
     this.appleSensors.update();
+    this.bodySensors.update();
     this.wallSensors.update();
   }
 
@@ -38,10 +41,12 @@ class Snake {
     this.body.forEach((part) => {
       ctx.beginPath();
       ctx.rect(part.x, part.y, part.width, part.height);
-      ctx.fillStyle= 'green';
+      ctx.fillStyle= 'lightgreen';
       ctx.fill();
     });
     this.appleSensors.draw(ctx, 'yellow');
+    // this.bodySensors.draw(ctx, 'blue');
+    // this.wallSensors.draw(ctx, 'red');
   }
 
   move() {
