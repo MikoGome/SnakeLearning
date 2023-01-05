@@ -1,6 +1,8 @@
 class Board {
   constructor(width, height) {
     this.chunk = 32;
+    this.x = 0;
+    this.y = 0;
     this.width = width;
     this.height = height;
     this.snake = new Snake(
