@@ -18,9 +18,7 @@ class Sensor {
   }
 
   draw(ctx, color) {
-    console.log('this.rays', this.rays)
     this.rays.forEach(ray => {
-      console.log('ray', ray)
       ctx.beginPath();
       const [A, B] = ray;
       ctx.moveTo(A.x, A.y);
@@ -47,8 +45,7 @@ class Sensor {
     };
 
     if(Array.isArray(this.target)) {
-      console.log(this.target);
-      for(let i = this.target.length - 1; i >= 0; i--) {
+      for(let i = 0; i < this.target.length; i++) {
         const Cx = {
           x: this.target[i].x,
           y: this.target[i].y + this.target[i].height/2,
@@ -56,7 +53,7 @@ class Sensor {
     
         const Cy = {
           x: this.target[i].x + this.target[i].width/2,
-          y: this.target.y,
+          y: this.target[i].y,
         }
     
         const Dx = {
@@ -71,9 +68,7 @@ class Sensor {
     
         const intersectionX = getIntersection(A,B,Cx,Dx);
         const intersectionY = getIntersection(A,B,Cy,Dy);
-        console.log(intersectionX, intersectionY)
         const intersection = intersectionX.offset < intersectionY.offset ? intersectionX : intersectionY;
-        console.log(intersection);
         if(intersection.intersecting ) {
           return [A, intersection];
         }

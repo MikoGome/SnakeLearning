@@ -4,21 +4,34 @@ class NeuralNetwork {
 
 class Level {
   constructor(inputCount, outputCount) {
-    const biases = Array(outputCount);
-    const weights = Array(inputCount).fill(0).map(() => Array(outputCount));
+    this.biases = Array(outputCount);
+    this.weights = Array(inputCount).fill(0).map(() => Array(outputCount));
 
     for(let i = 0; i < outputCount; i++) {
-      biases = Math.random() * 2 - 1;
+      this.biases[i] = Math.random() * 2 - 1;
     }
 
     for(let i = 0; i < inputCount; i++) {
       for(let j = 0; j < outputCount; j++) {
-        weights[i][j] = Math.random() * 2 - 1;
+        this.weights[i][j] = Math.random() * 2 - 1;
       }
     }
   }
 
-  feedForward() {
-
+  feedForward(inputs) {
+    const outputs = [];
+    for(let i = 0; i < this.biases.length; i++) {
+      let sum = 0;
+      for(let j = 0; j < inputs.length; j++) {
+        sum += inputs[j] * this.weights[j][i];
+      }
+      
+      if(sum > this.biases[i]) {
+        outputs[i] = 1;
+      } else {
+        outputs[i] = 0;
+      }
+    }
+    return outputs;
   } 
 }

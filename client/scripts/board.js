@@ -14,8 +14,8 @@ class Board {
   }
 
   update() {
-    this.snake.update();
     this.collision();
+    this.snake.update();
   }
 
   draw(ctx) {
@@ -32,7 +32,7 @@ class Board {
       this.snake.head.y < this.apple.y + this.apple.height &&
       this.snake.head.y + this.snake.head.height > this.apple.y
     ) {
-      this.snake.expand(this.snake.head.x, this.snake.head.y, this.snake.head.width, this.snake.head.height);
+      this.snake.consume();
       this.apple.respawn(this.width, this.height);
     } else if( //check if snake is out of boundary
       this.snake.head.x < 0 ||

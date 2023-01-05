@@ -1,10 +1,13 @@
 class Snake {
   constructor(x, y) {
     this.head = new Part(x, y, 32, 32, 'right');
-    this.body = []; 
+    this.body = [];
+    this.bodyDirections = [];
     this.controls = new Controls();
     this.speed = 4;
     this.isDead = false;
+    this.consuming = false;
+    this.consumed = null;
 
     this.appleSensors = null;
     this.bodySensors = null;
@@ -21,13 +24,19 @@ class Snake {
     if(this.isDead) {
       return;
     }
-    this.body.unshift(new Part(this.head.x, this.head.y, this.head.width, this.head.height));
-    this.body.pop();
-    this.move();
-    this.checkCollision();
+    this.follow();
     if(this.#canTurn()) {
+      this.checkCollision();
       this.turn();
+      this.move();
+      if(this.consuming) {
+        this.digest();
+      }
+      this.consuming = false;
+    } else {
+      this.move();
     }
+    
     this.appleSensors.update();
     this.bodySensors.update();
     this.wallSensors.update();
@@ -41,11 +50,11 @@ class Snake {
     this.body.forEach((part) => {
       ctx.beginPath();
       ctx.rect(part.x, part.y, part.width, part.height);
-      ctx.fillStyle= 'lightgreen';
+      ctx.fillStyle= 'green';
       ctx.fill();
     });
-    this.appleSensors.draw(ctx, 'yellow');
-    // this.bodySensors.draw(ctx, 'blue');
+    // this.appleSensors.draw(ctx, 'yellow');
+    this.bodySensors.draw(ctx, 'blue');
     // this.wallSensors.draw(ctx, 'red');
   }
 
@@ -67,6 +76,13 @@ class Snake {
   }
 
   turn() {
+    for(let i = this.body.length - 1; i >= 0; i--) {
+      if(i === 0) {
+        this.body[i].direction = this.head.direction;
+      } else {
+        this.body[i].direction = this.body[i-1].direction;
+      }
+    }
     if(this.controls.up) {
       if(this.head.direction === 'down') return;
       this.head.direction = 'up';
@@ -89,9 +105,33 @@ class Snake {
     return false;
   }
 
-  expand(x, y, width, height) {
-    for(let i = 0; i < 8; i++) {
-      this.body.push(new Part(x, y, width, height));
+  consume() {
+    if(this.body.length) {
+      const lastPart = this.body[this.body.length - 1];
+      switch(lastPart.direction) {
+        case 'up':
+          this.consumed = new Part(lastPart.x, lastPart.y, lastPart.width, lastPart.height, lastPart.direction);
+          break;
+        case 'down':
+          this.consumed = new Part(lastPart.x, lastPart.y, lastPart.width, lastPart.height, lastPart.direction);
+          break;
+        case 'left':
+          this.consumed = new Part(lastPart.x, lastPart.y, lastPart.width, lastPart.height, lastPart.direction);
+          break;
+        case 'right':
+          this.consumed = new Part(lastPart.x, lastPart.y, lastPart.width, lastPart.height, lastPart.direction);
+          break;
+      }
+    } else {
+      this.consumed = new Part(this.head.x, this.head.y, this.head.width, this.head.height, this.head.direction);
+    }
+    this.consuming = true;
+  }
+
+  digest() {
+    if(this.consumed) {
+      this.body.push(this.consumed);
+      this.consumed = null;
     }
   }
 
@@ -99,41 +139,47 @@ class Snake {
     for(let i = 0; i < this.body.length; i++) {
       const part = this.body[i];
       if(
-        this.head.direction === 'left' &&
         this.head.x < part.x + part.width &&
         this.head.x + 1 > part.x &&
         this.head.y < part.y + part.height &&
         this.head.y + this.head.height > part.y
       ) {
-        this.isDead = true;
-        break;
-      } else if(
-        this.head.direction === 'right' &&
-        this.head.x + this.head.width - 1 < part.x + part.width &&
-        this.head.x + this.head.width > part.x &&
-        this.head.y < part.y + part.height &&
-        this.head.y + this.head.height > part.y
-      ) {
-        this.isDead = true;
-        break;
-      } else if(
-        this.head.direction === 'up' &&
-        this.head.x < part.x + part.width &&
-        this.head.x + this.head.width > part.x &&
-        this.head.y < part.y + part.height &&
-        this.head.y + 1 > part.y
-      ){
-        this.isDead = true;
-        break;
-      } else if(
-        this.head.direction === 'down' &&
-        this.head.x < part.x + part.width &&
-        this.head.x + this.head.width > part.x &&
-        this.head.y + this.head.height - 1 < part.y + part.height &&
-        this.head.y + this.head.height > part.y
-      ){
-        this.isDead = true;
-        break;
+        console.log('collided');
+      }
+    }
+  }
+
+  follow() {
+    for(let i = this.body.length - 1; i >= 0; i--) {
+      switch(this.body[i].direction) {
+        case 'up':
+          this.body[i].y -= this.speed;
+          break;
+        case 'down':
+          this.body[i].y += this.speed;
+          break;
+        case 'left':
+          this.body[i].x -= this.speed;
+          break;
+        case 'right':
+          this.body[i].x += this.speed;
+          break;
+      }
+    }
+    if(this.body.length) {
+      switch(this.head.direction) {
+        case 'up':
+          this.body[0].y = this.head.y + this.head.height;
+          break;
+        case 'down':
+          this.body[0].y = this.head.y - this.head.height;
+          break;
+        case 'left':
+          this.body[0].x = this.head.x + this.head.width;
+          break;
+        case 'right':
+          this.body[0].x = this.head.x - this.head.width;
+          break;
       }
     }
   }
