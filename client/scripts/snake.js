@@ -1,41 +1,90 @@
 class Snake {
-  constructor(x, y) {
+  constructor(width, height, chunk) {
+
+    this.boardWidth = width;
+    this.boardHeight = height;
+
+    const x = chunkify(this.boardWidth / 2, 32);
+    const y = chunkify(this.boardHeight / 2, 32);
+
     this.head = new Part(x, y, 32, 32, 'right');
     this.body = [];
     this.bodyDirections = [];
     this.controls = new Controls();
     this.speed = 4;
     this.isDead = false;
-    this.consuming = false;
     this.consumed = null;
+
+    this.apple = new Apple(this.boardWidth, this.boardHeight, chunk, chunk);
 
     this.appleSensors = null;
     this.bodySensors = null;
     this.wallSensors = null;
+
+    this.brain = new NeuralNetwork([32, 16, 8, 4]);
+
+    this.fitness = 0;
   }
 
-  see(apple, board) {
-    this.appleSensors = new Sensor(8, this.head, apple, board);
+  see(board) {
+    this.appleSensors = new Sensor(8, this.head, this.apple, board);
     this.bodySensors = new Sensor(8, this.head, this.body, board);
     this.wallSensors = new Sensor(8, this.head, board, board);
   }
 
+  stimulateMotor() {
+    const appleOffsets = this.appleSensors.rays.map(appleSensor => appleSensor[1].offset);
+    const bodyOffsets = this.bodySensors.rays.map(bodySensor => bodySensor[1].offset);
+    const wallOffsets = this.wallSensors.rays.map(wallSensor => wallSensor[1].offset);
+    const outputs = this.brain.feedForward([...appleOffsets, ...bodyOffsets, ...wallOffsets]);
+
+    for(let i = 0; i < outputs.length; i++) {
+      const output = outputs[i];
+      switch(i) {
+        case 0:
+          if(output) {
+            this.controls.turnOff();
+            this.controls.up = true;
+          }
+          break;
+        case 1:
+          if(output) {
+            this.controls.turnOff();
+            this.controls.down = true;
+          }
+          break;
+        case 2:
+          if(output) {
+            this.controls.turnOff();
+            this.controls.left = true;
+          }
+          break;
+        case 3:
+          if(output) {
+            this.controls.turnOff();
+            this.controls.right = true;
+          }
+          break;
+      }
+    }
+  }
+  
   update() {
+    
     if(this.isDead) {
       return;
     }
+    this.move();
     this.follow();
     if(this.#canTurn()) {
+      this.straighten();
       this.checkCollision();
+      this.stimulateMotor();
       this.turn();
-      this.move();
-      if(this.consuming) {
-        this.digest();
-      }
-      this.consuming = false;
-    } else {
-      this.move();
+      this.digest();
     }
+
+    this.collision();
     
     this.appleSensors.update();
     this.bodySensors.update();
@@ -43,18 +92,23 @@ class Snake {
   }
 
   draw(ctx) {
+    
+    if(this.isDead) return;
+    const color = 'lightgreen';
+    
     ctx.beginPath();
     ctx.rect(this.head.x, this.head.y, 32, 32);
-    ctx.fillStyle = 'lightgreen';
+    ctx.fillStyle = color;
     ctx.fill();
     this.body.forEach((part) => {
       ctx.beginPath();
       ctx.rect(part.x, part.y, part.width, part.height);
-      ctx.fillStyle= 'green';
+      ctx.fillStyle= color;
       ctx.fill();
     });
+    this.apple.draw(ctx);
     // this.appleSensors.draw(ctx, 'yellow');
-    this.bodySensors.draw(ctx, 'blue');
+    // this.bodySensors.draw(ctx, 'blue');
     // this.wallSensors.draw(ctx, 'red');
   }
 
@@ -83,6 +137,7 @@ class Snake {
         this.body[i].direction = this.body[i-1].direction;
       }
     }
+    //this.stimulateMotor();
     if(this.controls.up) {
       if(this.head.direction === 'down') return;
       this.head.direction = 'up';
@@ -99,13 +154,15 @@ class Snake {
   }
 
   #canTurn() {
-    if(this.head.x % 32 === 0 && this.head.y % 32 === 0) {
+    this.fitness += 1;
+    if(this.head.x === chunkify(this.head.x, this.head.width) && this.head.y === chunkify(this.head.y, this.head.height)) {
       return true;
     }
     return false;
   }
 
   consume() {
+    this.fitness += 100;
     if(this.body.length) {
       const lastPart = this.body[this.body.length - 1];
       switch(lastPart.direction) {
@@ -135,6 +192,44 @@ class Snake {
     }
   }
 
+  collision() {
+    //check if snake ate apple
+    if(
+      this.head.x < this.apple.x + this.apple.width &&
+      this.head.x + this.head.width > this.apple.x &&
+      this.head.y < this.apple.y + this.apple.height &&
+      this.head.y + this.head.height > this.apple.y
+    ) {
+      this.consume();
+      this.apple.respawn(this.boardWidth, this.boardHeight);
+      //make sure the apple doesn't spawn inside the snake
+      let appleInSnake = true;
+      while(appleInSnake) {
+        appleInSnake = false;
+        if(this.apple.x === this.head.x && this.apple.y === this.head.y) {
+          appleInSnake = true;
+          this.apple.respawn(this.boardWidth, this.boardHeight);
+        } else {
+          for(let i = 0; i < this.body.length; i++) {
+            const part = this.body[i];
+            if(this.apple.x === part.x && this.apple.y === part.y) {
+              appleInSnake = true;
+              this.apple.respawn(this.boardWidth, this.boardHeight);
+              break;
+            }
+          }
+        }
+      }
+    } else if( //check if snake is out of boundary
+      this.head.x < 0 ||
+      this.head.x + this.head.width > this.boardWidth ||
+      this.head.y < 0 ||
+      this.head.y + this.head.height > this.boardHeight
+    ) {
+      this.isDead = true;
+    }
+  }
+
   checkCollision() {
     for(let i = 0; i < this.body.length; i++) {
       const part = this.body[i];
@@ -144,7 +239,7 @@ class Snake {
         this.head.y < part.y + part.height &&
         this.head.y + this.head.height > part.y
       ) {
-        console.log('collided');
+        this.isDead = true;
       }
     }
   }
@@ -166,6 +261,9 @@ class Snake {
           break;
       }
     }
+  }
+
+  straighten() {
     if(this.body.length) {
       switch(this.head.direction) {
         case 'up':
@@ -180,6 +278,22 @@ class Snake {
         case 'right':
           this.body[0].x = this.head.x - this.head.width;
           break;
+      }
+      for(let i = 1; i < this.body.length; i++) {
+        switch(this.body[i-1].direction) {
+          case 'up':
+            this.body[i].y = this.body[i-1].y + this.body[i-1].height;
+            break;
+          case 'down':
+            this.body[i].y = this.body[i-1].y - this.body[i-1].height;
+            break;
+          case 'left':
+            this.body[i].x = this.body[i-1].x + this.body[i-1].width;
+            break;
+          case 'right':
+            this.body[i].x = this.body[i-1].x - this.body[i-1].width;
+            break;
+        }
       }
     }
   }

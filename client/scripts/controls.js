@@ -3,7 +3,7 @@ class Controls {
     this.up = false;
     this.down = false;
     this.left = false;
-    this.right = true;
+    this.right = false;
     this.#attachControls();
   }
 

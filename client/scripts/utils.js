@@ -73,3 +73,15 @@ function getIntersection(A,B,C,D) {
     intersecting: false,
   }
 }
+
+function deepClone(input) {
+  if(typeof input === 'object') {
+    const copy = new input.constructor();
+    for(const key in input) {
+      copy[key] = deepClone(input[key]);
+    }
+    return copy;
+  } else {
+    return input;
+  }
+}

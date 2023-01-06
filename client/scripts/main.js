@@ -7,6 +7,7 @@ function main() {
   function animate(time) {
     if(prevTime && time - prevTime < 1000/60) return requestAnimationFrame(animate);
     board.update();
+    document.getElementById('generation-number').innerText = board.population.generation;
     board.draw(ctx);
     prevTime = performance.now();
     requestAnimationFrame(animate);

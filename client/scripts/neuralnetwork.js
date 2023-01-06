@@ -1,5 +1,36 @@
 class NeuralNetwork {
+  constructor(neuronCounts) {
+    this.levels = [];
+    if(neuronCounts) {
+      for(let i = 0; i < neuronCounts.length-1; i++) {
+        const lowerLevelLength = neuronCounts[i];
+        const upperLevelLength = neuronCounts[i + 1];
+        this.levels.push(new Level(lowerLevelLength, upperLevelLength));
+      }
+    }
+  }
 
+  feedForward(inputs) {
+    let outputs = this.levels[0].feedForward(inputs);
+    for(let i = 1; i < this.levels.length; i++) {
+      outputs = this.levels[i].feedForward(outputs);
+    }
+    return outputs;
+  }
+
+  mutate(amount) {
+    this.levels.forEach(level => {
+      for(let i = 0; i < level.biases.length; i++) {
+        level.biases[i] = lerp(level.biases[i], Math.random() * 2 - 1, amount);
+      }
+
+      for(let i = 0; i < level.weights.length; i++) {
+        for(let j = 0; j < level.weights[i].length; j++) {
+          level.weights[i][j] = lerp(level.weights[i][j], Math.random() * 2 - 1, amount);
+        }
+      }
+    });
+  }
 }
 
 class Level {
